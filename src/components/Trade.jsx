@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { OrderContext } from "../context/OrderContext";
 
-// Mock instrument list for trade selection; in real setup, fetch from API
 const mockInstruments = [
   { symbol: "RELIANCE", name: "Reliance Industries", exchange: "NSE" },
   { symbol: "TCS", name: "Tata Consultancy Services", exchange: "BSE" },
@@ -16,6 +16,8 @@ const BROKERAGE_RATE = 0.0005; // 0.05%
 const SEBI_STT_CHARGE = 0.0001; // 0.01%
 
 const Trade = () => {
+  const { placeOrder, orderStatus, loading, error } = useContext(OrderContext);
+
   const [form, setForm] = useState({
     instrument: mockInstruments[0].symbol,
     action: "Buy",
@@ -23,13 +25,9 @@ const Trade = () => {
     quantity: 1,
     price: "",
   });
-  const [confirmation, setConfirmation] = useState(null);
-  const [error, setError] = useState("");
 
-  // Mock price for selected instrument
+  // Mock price getter
   const getPrice = (symbol) => {
-    const instrument = mockInstruments.find((i) => i.symbol === symbol);
-    // Hardcoded prices (in real app, would be dynamic)
     switch (symbol) {
       case "RELIANCE":
         return 2900.5;
@@ -48,32 +46,23 @@ const Trade = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    // For quantity and price, ensure numeric values
     if ((name === "quantity" || name === "price") && value !== "") {
-      if (!/^\d*\.?\d*$/.test(value)) {
-        return;
-      }
+      if (!/^\d*\.?\d*$/.test(value)) return;
     }
-
     setForm({ ...form, [name]: value });
-    setError("");
-    setConfirmation(null);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const qty = parseFloat(form.quantity);
     if (isNaN(qty) || qty <= 0) {
-      setError("Quantity must be a positive number.");
+      alert("Quantity must be a positive number.");
       return;
     }
-
     if (form.orderType !== "Market") {
       const priceVal = parseFloat(form.price);
       if (isNaN(priceVal) || priceVal <= 0) {
-        setError("Valid price is required for this order type.");
+        alert("Valid price is required for this order type.");
         return;
       }
     }
@@ -86,7 +75,7 @@ const Trade = () => {
     const totalCharges = brokerage + sebiStt;
     const netAmount = form.action === "Buy" ? orderValue + totalCharges : orderValue - totalCharges;
 
-    setConfirmation({
+    const orderPayload = {
       instrument: form.instrument,
       action: form.action,
       orderType: form.orderType,
@@ -96,16 +85,14 @@ const Trade = () => {
       sebiStt: sebiStt.toFixed(2),
       totalCharges: totalCharges.toFixed(2),
       netAmount: netAmount.toFixed(2),
-      status: "Executed (mock)",
-    });
+    };
+
+    placeOrder(orderPayload);
   };
 
   return (
     <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded shadow">
       <h2 className="text-2xl font-bold mb-4">Trade</h2>
-      {error && (
-        <div className="mb-4 text-red-600 border border-red-600 p-2 rounded">{error}</div>
-      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <label className="block">
           <span>Instrument</span>
@@ -183,28 +170,34 @@ const Trade = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+          disabled={loading}
+          className={`w-full py-2 rounded text-white ${
+            loading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          }`}
         >
-          Place Order
+          {loading ? "Placing Order..." : "Place Order"}
         </button>
       </form>
 
-      {confirmation && (
+      {error && <p className="mt-4 text-red-600">{error}</p>}
+
+      {orderStatus && (
         <div className="mt-6 p-4 bg-green-100 dark:bg-green-900 border border-green-600 rounded">
           <h3 className="font-semibold mb-2">Order Confirmation</h3>
           <p>
-            {confirmation.action} {confirmation.quantity} shares of{" "}
-            {confirmation.instrument} at ₹{confirmation.price.toFixed(2)} (
-            {confirmation.orderType})
+            {orderStatus.order.action} {orderStatus.order.quantity} shares of{" "}
+            {orderStatus.order.instrument} at ₹{orderStatus.order.price.toFixed(2)} (
+            {orderStatus.order.orderType})
           </p>
-          <p>Brokerage: ₹{confirmation.brokerage}</p>
-          <p>SEBI/STT Charges: ₹{confirmation.sebiStt}</p>
-          <p>Total Charges: ₹{confirmation.totalCharges}</p>
+          <p>Brokerage: ₹{orderStatus.order.brokerage}</p>
+          <p>SEBI/STT Charges: ₹{orderStatus.order.sebiStt}</p>
+          <p>Total Charges: ₹{orderStatus.order.totalCharges}</p>
           <p>
-            Net {confirmation.action === "Buy" ? "Debit" : "Credit"}: ₹
-            {confirmation.netAmount}
+            Net {orderStatus.order.action === "Buy" ? "Debit" : "Credit"}: ₹
+            {orderStatus.order.netAmount}
           </p>
-          <p>Status: {confirmation.status}</p>
+          <p>Status: {orderStatus.status}</p>
+          <p>Order ID: {orderStatus.orderId}</p>
         </div>
       )}
     </div>
