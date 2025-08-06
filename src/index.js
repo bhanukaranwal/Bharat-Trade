@@ -5,6 +5,7 @@ import { UserProvider } from "./context/UserContext";
 import { MarketProvider } from "./context/MarketContext";
 import { PortfolioProvider } from "./context/PortfolioContext";
 import { OrderProvider } from "./context/OrderContext";
+import { NotificationProvider } from "./context/NotificationContext";
 
 const root = createRoot(document.getElementById("root"));
 root.render(
@@ -12,7 +13,9 @@ root.render(
     <MarketProvider>
       <PortfolioProvider>
         <OrderProvider>
-          <App />
+          <NotificationProvider>
+            <App />
+          </NotificationProvider>
         </OrderProvider>
       </PortfolioProvider>
     </MarketProvider>
