@@ -1,0 +1,23 @@
+{
+  "name": "bharat-trade",
+  "version": "1.0.0",
+  "description": "Web-based Indian stock trading broker app built with React and Tailwind CSS.",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["trading", "stock market", "react", "tailwindcss", "india"],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "chart.js": "^4.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.4.0"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.2.0",
+    "vite": "^4.0.0"
+  }
+}
