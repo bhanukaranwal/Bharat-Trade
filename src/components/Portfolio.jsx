@@ -1,95 +1,43 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { UserContext } from "../context/UserContext";
+import { PortfolioContext } from "../context/PortfolioContext";
 import { Chart, ArcElement, Tooltip, Legend } from "chart.js";
 
 Chart.register(ArcElement, Tooltip, Legend);
 
-// Mock portfolio data with holdings and transaction history
-const mockPortfolioHoldings = [
-  { symbol: "RELIANCE", type: "Stock", quantity: 50, avgPrice: 2800 },
-  { symbol: "TCS", type: "Stock", quantity: 20, avgPrice: 4000 },
-  { symbol: "NIFTYBEES", type: "ETF", quantity: 100, avgPrice: 145 },
-  { symbol: "SBI Mutual Fund", type: "Mutual Fund", quantity: 200, avgPrice: 110 },
-  { symbol: "GOLDBEES", type: "ETF", quantity: 150, avgPrice: 53 },
-];
-
-const mockLatestPrices = {
-  RELIANCE: 2900.5,
-  TCS: 4200.75,
-  NIFTYBEES: 150.0,
-  "SBI Mutual Fund": 115,
-  GOLDBEES: 55.5,
-};
-
-const mockTransactions = [
-  {
-    id: 1,
-    date: "2024-07-21",
-    symbol: "RELIANCE",
-    type: "Buy",
-    quantity: 30,
-    price: 2750,
-    exchange: "NSE",
-  },
-  {
-    id: 2,
-    date: "2024-08-01",
-    symbol: "RELIANCE",
-    type: "Buy",
-    quantity: 20,
-    price: 2850,
-    exchange: "NSE",
-  },
-  {
-    id: 3,
-    date: "2024-07-25",
-    symbol: "TCS",
-    type: "Buy",
-    quantity: 20,
-    price: 4000,
-    exchange: "BSE",
-  },
-  {
-    id: 4,
-    date: "2024-07-28",
-    symbol: "NIFTYBEES",
-    type: "Buy",
-    quantity: 100,
-    price: 145,
-    exchange: "NSE",
-  },
-  {
-    id: 5,
-    date: "2024-07-30",
-    symbol: "SBI Mutual Fund",
-    type: "Buy",
-    quantity: 200,
-    price: 110,
-    exchange: "AMFI",
-  },
-];
-
 const Portfolio = () => {
   const { user } = useContext(UserContext);
+  const { portfolioData, loading, error } = useContext(PortfolioContext);
+
   const [filterSymbol, setFilterSymbol] = useState("");
   const [filterType, setFilterType] = useState("All");
-  const [filteredTransactions, setFilteredTransactions] = useState(mockTransactions);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [portfolioValue, setPortfolioValue] = useState(0);
   const [unrealizedPL, setUnrealizedPL] = useState(0);
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
-  // Calculate portfolio performance and setup pie chart
+  // Mock latest prices (can be enhanced later to fetch real-time data)
+  const mockLatestPrices = {
+    RELIANCE: 2900.5,
+    TCS: 4200.75,
+    NIFTYBEES: 150.0,
+    "SBI Mutual Fund": 115,
+    GOLDBEES: 55.5,
+  };
+
   useEffect(() => {
+    if (!portfolioData) return;
+
     // Filter transactions
-    const filtered = mockTransactions.filter((txn) => {
+    const filtered = portfolioData.transactions.filter((txn) => {
       const symbolMatch = filterSymbol
         ? txn.symbol.toLowerCase().includes(filterSymbol.toLowerCase())
         : true;
       const typeMatch =
         filterType === "All"
           ? true
-          : mockPortfolioHoldings.find(
+          : portfolioData.holdings.find(
               (h) => h.symbol === txn.symbol && h.type === filterType
             );
       return symbolMatch && typeMatch;
@@ -99,7 +47,7 @@ const Portfolio = () => {
     // Calculate portfolio value and unrealized gain/loss
     let totalValue = 0;
     let totalCost = 0;
-    mockPortfolioHoldings.forEach(({ symbol, quantity, avgPrice }) => {
+    portfolioData.holdings.forEach(({ symbol, quantity, avgPrice }) => {
       const currentPrice = mockLatestPrices[symbol] || avgPrice;
       totalValue += currentPrice * quantity;
       totalCost += avgPrice * quantity;
@@ -109,7 +57,7 @@ const Portfolio = () => {
 
     // Portfolio breakdown by asset type
     const breakdown = {};
-    mockPortfolioHoldings.forEach(({ type, quantity, symbol }) => {
+    portfolioData.holdings.forEach(({ type, quantity, symbol }) => {
       const currentPrice = mockLatestPrices[symbol] || 0;
       breakdown[type] = (breakdown[type] || 0) + currentPrice * quantity;
     });
@@ -118,28 +66,30 @@ const Portfolio = () => {
     if (chartInstance.current) {
       chartInstance.current.destroy();
     }
-    const ctx = chartRef.current.getContext("2d");
-    chartInstance.current = new Chart(ctx, {
-      type: "pie",
-      data: {
-        labels: Object.keys(breakdown),
-        datasets: [
-          {
-            data: Object.values(breakdown),
-            backgroundColor: [
-              "#f97316", // Saffron - Stocks
-              "#22c55e", // Green - Mutual Funds
-              "#2563eb", // Blue - ETFs
-              "#eab308", // Yellow - Bonds/Other
-            ],
-          },
-        ],
-      },
-      options: {
-        plugins: { legend: { position: "bottom" } },
-      },
-    });
-  }, [filterSymbol, filterType]);
+    if (chartRef.current) {
+      const ctx = chartRef.current.getContext("2d");
+      chartInstance.current = new Chart(ctx, {
+        type: "pie",
+        data: {
+          labels: Object.keys(breakdown),
+          datasets: [
+            {
+              data: Object.values(breakdown),
+              backgroundColor: [
+                "#f97316", // Saffron - Stocks
+                "#22c55e", // Green - Mutual Funds
+                "#2563eb", // Blue - ETFs
+                "#eab308", // Yellow - Bonds/Other
+              ],
+            },
+          ],
+        },
+        options: {
+          plugins: { legend: { position: "bottom" } },
+        },
+      });
+    }
+  }, [portfolioData, filterSymbol, filterType]);
 
   if (!user) {
     return (
@@ -147,6 +97,14 @@ const Portfolio = () => {
         <p>Please login to view your portfolio.</p>
       </div>
     );
+  }
+
+  if (loading) {
+    return <p>Loading portfolio data...</p>;
+  }
+
+  if (error) {
+    return <p className="text-red-600">Error: {error}</p>;
   }
 
   return (
