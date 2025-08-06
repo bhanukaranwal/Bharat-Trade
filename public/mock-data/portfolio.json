@@ -1,0 +1,9 @@
+{
+  "holdings": [
+    { "symbol": "RELIANCE", "type": "Stock", "quantity": 50, "avgPrice": 2800 },
+    { "symbol": "NIFTYBEES", "type": "ETF", "quantity": 100, "avgPrice": 145 }
+  ],
+  "transactions": [
+    { "id": 1, "date": "2024-07-21", "symbol": "RELIANCE", "type": "Buy", "quantity": 50, "price": 2800, "exchange": "NSE" }
+  ]
+}
