@@ -1,0 +1,15 @@
+{
+  "stocks": [
+    { "symbol": "RELIANCE", "exchange": "NSE", "name": "Reliance Industries", "price": 2900.5, "change": 1.5 },
+    { "symbol": "TCS", "exchange": "BSE", "name": "Tata Consultancy Services", "price": 4200.75, "change": -0.3 }
+  ],
+  "etfs": [
+    { "symbol": "NIFTYBEES", "exchange": "NSE", "name": "NIFTYBEES ETF", "price": 150, "change": 0.2 }
+  ],
+  "indices": [
+    { "symbol": "NIFTY50", "exchange": "NSE", "name": "NIFTY 50", "price": 17600, "change": 0.8 }
+  ],
+  "cryptos": [
+    { "symbol": "BTC/INR", "exchange": "WazirX", "name": "Bitcoin INR", "price": 4800000, "change": 2 }
+  ]
+}
